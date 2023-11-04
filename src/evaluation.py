@@ -20,14 +20,12 @@ class Label(StrEnum):
 class Evaluation:
     def __init__(self, data_classes: list = [label.value for label in Label]) -> None:
         """
-        Jan
         :param list data_classes: list of true labels (convert from int to str)
         """
         self.classes = data_classes
 
     def per_batch(self, index_batch: int, epoch: int, loss_batch: float, loss_val: float = None) -> None:
         """
-        Thomas
         Logs the loss of a batch
         :param int index_batch: index of the batch to log (step)
         :param int epoch: index of the epoch to log
@@ -48,7 +46,6 @@ class Evaluation:
         label_val: np.array,
     ) -> None:
         """
-        Jan
         wandb log of different scores
         :param int epoch: index of the epoch to log
         :param float loss_train: log loss of the training
@@ -75,7 +72,6 @@ class Evaluation:
 
     def per_model(self, label_val, pred_val, val_data) -> None:
         """
-        Jan
         wandb log of a confusion matrix and plots of wrong classified animals
         :param np.array label_val: labels of the validation
         :param np.array pred_val: prediction of the validation
@@ -124,7 +120,6 @@ class Evaluation:
 
     def plot_16_pictures(self, index: np.array, data: pd.DataFrame) -> None:
         """
-        Jan
         plot 16 pcitures
         :param np.array index: index of the chosen observations
         :param pd.DataFrame data: data with the filepath of the images

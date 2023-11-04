@@ -11,11 +11,8 @@ from src.data_modules import DataModule
 from src.evaluation import Evaluation
 
 # %%
-
-
 def _set_seed(seed: int = 42):
     """
-    Jan
     Function to set the seed for the gpu and the cpu
     private method, should not be changed
     :param int seed: DON'T CHANGE
@@ -42,7 +39,6 @@ class DeepModel_Trainer:
         random_cv_seeds: list = [42, 43, 44, 45, 46]
     ) -> None:
         """
-        Jan
         Load the train/test/val data.
         :param DataModule data_model: instance where the 3 dataloader are available.
         :param nn.Module model: pytorch deep learning module
@@ -68,7 +64,6 @@ class DeepModel_Trainer:
         model_architecture: str,
     ):
         """
-        Thomas
         Sets a new run up (used for k-fold)
         :param str project_name: Name of the project in wandb.
         :param str run_group: Name of the project in wandb.
@@ -81,7 +76,7 @@ class DeepModel_Trainer:
         self.run = wandb.init(
             settings=wandb.Settings(start_method="thread"),
             project=project_name,
-            entity="deeptier",
+            entity="dlbs-crop-segmentation",
             name=f"{fold}-Fold",
             group=run_group,
             config={
@@ -108,7 +103,6 @@ class DeepModel_Trainer:
         cross_validation_random_seeding=False
     ) -> None:
         """
-        Jan
         To train a pytorch model.
         :param str run_group: Name of the run group (kfolds).
         :param str model_architecture: Modeltype (architectur) of the model
@@ -189,18 +183,17 @@ class DeepModel_Trainer:
                     if batch_iter % validate_batch_loss_each == 0:
                         pred_val, label_val = self.predict(
                             model,
-                            self.val_loader,
-                       )
-                        loss_val_batch = loss_module(
-                            torch.tensor(pred_val), torch.tensor(label_val)
-                        )
+                            self.val_loader)
+                    loss_val_batch = loss_module(torch.tensor(pred_val),
+                                                  torch.tensor(label_val))
 
                     self.evaluation.per_batch(
                         batch_iter, epoch, loss, loss_val_batch)
 
                     # data for evaluation
                     label_train_data = np.concatenate(
-                        (label_train_data, data_labels.data.cpu().numpy()), axis=0
+                        (label_train_data,
+                          data_labels.data.cpu().numpy()), axis=0
                     )
                     predict_train = torch.argmax(preds, 1).data.cpu().numpy()
                     pred_train_data = np.concatenate(
@@ -245,7 +238,6 @@ class DeepModel_Trainer:
         data_loader: DataLoader,
     ):
         """
-        Jan
         Prediction for a given model and dataset
         :param nn.Module model: pytorch deep learning module
         :param DataLoader data_loader: data for a prediction
@@ -281,7 +273,6 @@ class DeepModel_Trainer:
         self, submit_name: str,ensemble: bool = False
     ):
         """
-        Thomas
         Makes a submission file and saves the models state
         :param str submit_name: name of the file
         :param int decrease_confidence: divide the output bevor calculating the softmax
@@ -298,7 +289,6 @@ class DeepModel_Trainer:
         self, submit_name: str, ensemble: bool = False
     ):
         """
-        Jan
         Creates the file for the submission
         :param str submit_name: name of the file
         :param int decrease_confidence: divide the output bevor calculating the softmax
@@ -332,7 +322,6 @@ class DeepModel_Trainer:
 
     def _save_model(self, submit_name: str):
         """
-        Thomas
         saves the models state
         :param str submit_name: name of the model file
         """

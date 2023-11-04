@@ -31,7 +31,6 @@ class ImagesDataset(Dataset):
     def __getitem__(self, index: int) -> dict:
         """
         :param int index: index of the data path
-
         :return: dictionary of id,image,label
         :rtype: dict
 
@@ -67,7 +66,6 @@ class DataModule(pl.LightningDataModule):
         test_features_path: str = "./data/test.csv",
     ) -> None:
         """
-        Jan
         :param transforms basic_transform: basic tranformation -> default resize(224,224), ToTensor, standardize
         :param str train_features_path:
         :param str train_labels_path:

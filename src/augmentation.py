@@ -7,9 +7,8 @@ from torch import nn
 class None_Transform(nn.Module):
     """
     Is used as a None Transform, only forwards the inputs
-    Was necessary to create the whole composition in a nice way when using Transformer 
+    Was necessary to create the whole composition in a nice way when using Transformer
     """
-
     def __init__(self) -> None:
         super().__init__()
 
@@ -17,9 +16,10 @@ class None_Transform(nn.Module):
         return x
 
 
-# %%
 class Transformer:
-    """ Class which executes a composition of Transformations"""
+    """
+    Class which executes a composition of Transformations
+    """
 
     def __init__(
         self,
@@ -30,7 +30,7 @@ class Transformer:
         """
         Initialises a Transformer class for our project.
         this class uses presets for a transfer learning approaches and presets for preprocessing approaches.
-        it also uses a parameterized data augmentation set 
+        it also uses a parameterized data augmentation set
         :param torchvision.transforms data_augmentation_transformer: transformation steps for data_augmentation
         :param str preprocessing_transformer: string which defines a preset for all our transformation steps (resizing etc.)
         :param str pretrained_transformer: string which defines a preset for the pretrained transfer model settings
