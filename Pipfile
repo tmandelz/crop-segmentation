@@ -17,6 +17,8 @@ matplotlib = "*"
 strenum = "*"
 jupyter-contrib-nbextensions = "*"
 seaborn = "*"
+scikit-image = "*"
+h5py = "*"
 
 [dev-packages]
 ipykernel = "*"
