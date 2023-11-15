@@ -12,8 +12,8 @@ class Dataset(torch.utils.data.Dataset):
                  time_downsample_factor=2, num_channel=4, apply_cloud_masking=False, cloud_threshold=0.1,
                  return_cloud_cover=False, small_train_set_mode=False,
                  spring_start:int = 11,
-                 autumn_start:int = 6):
-
+                 autumn_start:int = 6,seed:int=42):
+        
         self.data = h5py.File(path, "r", libver='latest', swmr=True)
 
         # disect temporal dimension
