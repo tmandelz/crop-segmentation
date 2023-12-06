@@ -260,10 +260,10 @@ class Dataset(torch.utils.data.Dataset):
             test_f = int(self.samples*0.4)
         elif fold == 3:
             test_s = int(self.samples*0.4)
-            test_f = int(self.samples*0.6)
+            test_f = int(self.samples*0.56) #change from 0.6 to 0.56
         elif fold == 4:
-            test_s = int(self.samples*0.6)
-            test_f = int(self.samples*0.8)
+            test_s = int(self.samples*0.56) #change from 0.6 to 0.56
+            test_f = int(self.samples*0.6) #change from 0.8 to 0.56
         elif fold == 5:
             test_s = int(self.samples*0.8)
             test_f = int(self.samples)
