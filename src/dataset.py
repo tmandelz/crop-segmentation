@@ -17,7 +17,6 @@ class Dataset(torch.utils.data.Dataset):
         self.data = h5py.File(path, "r", libver='latest', swmr=True)
 
         # disect temporal dimension
-        # TODO:select correct temporal frame
         #Random sample a picture from summer
         self.random_temporal_sample = random.randint(spring_start, self.data["data"].shape[1]-autumn_start -71)
 
