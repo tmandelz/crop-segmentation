@@ -11,6 +11,7 @@ from src.dataset import Dataset
 from src.evaluation import Evaluation
 from collections import namedtuple
 
+
 # %%
 def _set_seed(seed: int = 42):
     """
@@ -25,17 +26,6 @@ def _set_seed(seed: int = 42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-# %%
-
-Label = namedtuple('Label',['name', 'id'])
-labels_crop = [Label('Unknown', 0),
-               Label('Field crops', 1),
-               Label('Forest', 2),
-               Label('Grassland', 3),
-               Label('Orchards', 4),
-               Label('Special crops', 5)]
-
-labeling = {label.id: label for label in reversed(labels_crop)}
 
 # %%
 device = torch.device(
@@ -103,8 +93,8 @@ class DeepModel_Trainer:
         # init wandb
         self.run = wandb.init(
             settings=wandb.Settings(start_method="thread"),
-            project='dlbs_crop',
-            entity="daniela-herzig",
+            project='dlbs_crop-UNet',
+            entity="dlbs_crop",
             name=f"{fold}-Fold",
             group=run_group,
             config={
@@ -160,7 +150,7 @@ class DeepModel_Trainer:
         # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
-            self.test_loader = [next(iter(self.test_loader))]
+            #self.test_loader = [next(iter(self.test_loader))]
         
         
         # prepare the model
@@ -175,7 +165,7 @@ class DeepModel_Trainer:
         #batch_iter = 1
         for epoch in tqdm(range(num_epochs), unit="epoch", desc="Epoch-Iteration"):
             loss_train = np.array([])
-            label_train_data = np.empty((0, 4, 24, 24))
+            label_train_data = np.empty((0, 24, 24))
             pred_train_data = np.empty((0, 24, 24))
 
             # train loop over batches
@@ -222,7 +212,7 @@ class DeepModel_Trainer:
                 # data for evaluation                
                 label_train_data = np.concatenate(
                     (label_train_data,
-                        input.data.cpu().numpy()), axis=0
+                        target_local_1.data.cpu().numpy()), axis=0
                 )
                 predict_train = torch.argmax(preds, 1).data.cpu().numpy()
                 
@@ -240,23 +230,28 @@ class DeepModel_Trainer:
             loss_val = loss_module(torch.tensor(
                 pred_val), torch.tensor(label_val))
             
+            print(pred_train_data.shape, #24*24*batchsize = 2304
+                label_train_data.shape, #24 * 24 *  batchsize = 2304
+                pred_val.shape, #2304
+                label_val.shape #2304
+                )
             self.evaluation.per_epoch(
                 epoch,
                 loss_train.mean(),
                 pred_train_data,
                 label_train_data,
                 loss_val,
-                np.argmax(pred_val, axis=1),
+                pred_val,
                 label_val,
             )
   
 
             # wandb per model
             self.evaluation.per_model(
-                label_val, pred_val, self.data_model.val.data)
+                label_val, pred_val)
 
             
-            self.run.finish()
+        self.run.finish()
     
    
  
