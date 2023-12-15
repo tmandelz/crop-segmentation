@@ -9,7 +9,6 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from src.dataset import Dataset
 from src.evaluation import Evaluation
-from collections import namedtuple
 
 
 # %%
@@ -40,7 +39,8 @@ class DeepModel_Trainer:
         model: nn.Module,
         device: torch.device = device,
         random_cv_seeds: list = [42, 43, 44, 45, 46],
-        rescale: bool = True        
+        rescale: bool = True,
+        temporal_sampling = True
         ) -> None:
         """
         Load the train/test/val data.
@@ -60,18 +60,22 @@ class DeepModel_Trainer:
         self.datadir = datadir
         self.gt_path = gt_path
         self.rescale = rescale
+        self.temporal_sampling = temporal_sampling
         
-    def create_loader(self):
+    def create_loader(self,eval_mode=False):
         """
         Creates the train/test (80/20) loader for all the models
          
         """ 
-        dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False)
-        dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False)
+        if eval_mode:
+            dataset_train = Dataset(self.datadir, 0., 'test', True, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
+            dataset_test = Dataset(self.datadir, 0., 'test', True, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
+        else:
+            dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
+            dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
                 
         self.train_loader = torch.utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=0)
         self.test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=4, shuffle=False, num_workers=0)
-  
 
     def setup_wandb_run(
         self,        
