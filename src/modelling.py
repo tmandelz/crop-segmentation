@@ -74,8 +74,8 @@ class DeepModel_Trainer:
             dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
             dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
                 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train, batch_size=4, shuffle=False, num_workers=0)
-        self.test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=4, shuffle=False, num_workers=0)
+        self.train_loader = torch.utils.data.DataLoader(dataset_train, batch_size=16, shuffle=False, num_workers=0)
+        self.test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=16, shuffle=False, num_workers=0)
 
     def setup_wandb_run(
         self,        
@@ -108,6 +108,7 @@ class DeepModel_Trainer:
             }
         )
 
+
     def train_model(
         self,
         run_group:str,
@@ -115,7 +116,7 @@ class DeepModel_Trainer:
         fold: str,
         num_epochs: int,
         test_model: bool,
-        loss_module: nn = nn.CrossEntropyLoss(),        
+        loss_module: nn = nn.CrossEntropyLoss(weight=torch.tensor([10**-40, 1, 1, 1, 1, 1])),        
         lr=1e-3,        
         validate_batch_loss_each: int = 20,        
         
@@ -154,12 +155,12 @@ class DeepModel_Trainer:
         # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
-            #self.test_loader = [next(iter(self.test_loader))]
+            self.test_loader = [next(iter(self.test_loader))]
         
         
         # prepare the model
         #model = self.model()
-        optimizer = optim.Adam(self.model.parameters(), lr)
+        optimizer = optim.Adam(self.model.parameters(), lr, weight_decay=0)
         
         # training mode
         self.model.train()
@@ -205,10 +206,12 @@ class DeepModel_Trainer:
 
                 loss_val_batch = None
                 if batch_iter % validate_batch_loss_each == 0:
-                    pred_val, label_val = self.predict(self.model, 
+                    pred_val, label_val, preds1 = self.predict(self.model, 
                         self.test_loader)
-                loss_val_batch = loss_module(torch.tensor(pred_val),
-                                                torch.tensor(label_val))
+                    
+                
+                loss_val_batch = loss_module(preds1,
+                                                torch.tensor(label_val, dtype=torch.long))
 
                 self.evaluation.per_batch(
                     batch_iter, epoch, loss, loss_val_batch)
@@ -230,15 +233,10 @@ class DeepModel_Trainer:
                 
                 
             # wandb per epoch
-            pred_val, label_val = self.predict(self.model, self.test_loader)
-            loss_val = loss_module(torch.tensor(
-                pred_val), torch.tensor(label_val))
-            
-            print(pred_train_data.shape, #24*24*batchsize = 2304
-                label_train_data.shape, #24 * 24 *  batchsize = 2304
-                pred_val.shape, #2304
-                label_val.shape #2304
-                )
+            pred_val, label_val, preds1 = self.predict(self.model, self.test_loader)
+            loss_val = loss_module(preds1, 
+                                   torch.tensor(label_val, dtype=torch.long))
+
             self.evaluation.per_epoch(
                 epoch,
                 loss_train.mean(),
@@ -249,7 +247,6 @@ class DeepModel_Trainer:
                 label_val,
             )
   
-
             # wandb per model
             self.evaluation.per_model(
                 label_val, pred_val)
@@ -295,8 +292,11 @@ class DeepModel_Trainer:
                 if self.rescale:
                     down = nn.Upsample(size=(24, 24), mode='bicubic')                    
                     preds = down(preds)
-                    preds = nn.functional.softmax(preds, dim=1)
-                    preds = torch.argmax(preds, dim=1)
+                    
+                    preds1 = nn.functional.softmax(preds, dim=1)
+                    
+                    preds = torch.argmax(preds1, dim=1)
+                    
                     
                 predictions = np.concatenate(
                     (predictions, preds.data.cpu().numpy()), axis=0
@@ -306,7 +306,7 @@ class DeepModel_Trainer:
                         (true_labels, target_local_1.data.cpu().numpy()), axis=0
                     )
         model.train()
-        return predictions, true_labels
+        return predictions, true_labels, preds1
  
 
     

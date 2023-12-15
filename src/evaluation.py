@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import wandb
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 from PIL import Image
 from strenum import StrEnum
@@ -64,28 +64,14 @@ class Evaluation:
         """
         pred_train = torch.tensor(pred_train).flatten()
         label_train = torch.tensor(label_train).flatten()
-        self.pred_val = torch.tensor(pred_val).flatten()
-        self.label_val = torch.tensor(label_val).flatten()
+        pred_val = torch.tensor(pred_val).flatten()
+        label_val = torch.tensor(label_val).flatten()
         
         
         f1_train ={f"train f1_score_global": multiclass_f1_score(pred_train, label_train, num_classes=6, average='micro')}
     
-        f1_test = {f"test f1_score_global":multiclass_f1_score(self.pred_val, self.label_val, num_classes=6, average='micro')}
+        f1_test = {f"test f1_score_global":multiclass_f1_score(pred_val, label_val, num_classes=6, average='micro')}
             
-            
-            
-        """f1_train = {
-            f"train f1_score von {self.classes[crop]}": f1_score(
-                label_train[:, crop], pred_train == crop
-            )
-            for crop in range(len(self.classes))
-        }
-        f1_test = {
-            f"validation f1_score von {self.classes[animal]}": f1_score(
-                label_val[:, animal], pred_val == animal
-            )
-            for animal in range(len(self.classes))
-        }"""
         
         log = {"epoch": epoch, "Loss train": loss_train, "Loss val": loss_val}
         wandb.log({**f1_train, **f1_test, **log})
@@ -97,48 +83,63 @@ class Evaluation:
         :param np.array pred_val: prediction of the validation
         :param pd.dataframe val_data: validation data
         """
-        self.true_label = label_val
-        self.true_pred = pred_val
-               
+        true_label = label_val.flatten()
+        true_pred = pred_val.flatten()        
         
-        labels_agro = np.unique(self.true_label)
+        cm = confusion_matrix(true_label, true_pred, labels=[0, 1, 2, 3, 4, 5])
+        disp = ConfusionMatrixDisplay(cm, display_labels=self.classes)
+        disp.plot()
+        plt.xticks(rotation = 45)
         
-        wrong_classified = np.where(self.true_label != self.true_pred)[0]
-
+        cm_f = cm.astype(float)
+        cl_acc = np.diag(cm_f) / (cm_f.sum(1) + 1e-12)
+        overall_acc = np.sum(np.diag(cm)) / np.sum(cm)
         
-        """self.plot_16_pictures(
-            pred_val, label_val
-        )"""
-
-        """wandb.log(
+        
+        wandb.log(
             {
-                "confusion matrix": wandb.sklearn.plot_confusion_matrix(
-                    self.label_val, self.pred_val, self.classes
-                ),
-                "wrong prediction": plt,
+                "confusion matrix": wandb.Image(plt)
             }
         )
-        plt.close()"""
+        plt.close()
+        
+        log = {"overall_accuracy": overall_acc}
+        wandb.log({**log})
+        wandb.log(dict(zip(self.classes,cl_acc)))
+        
+        #self.plot_16_pictures(label_val, pred_val) 
+        n_samples = 6
+        random_fields = np.random.choice(list(range(0,label_val.shape[0])),size=n_samples,replace=False)        
+        data_list = np.vstack((label_val[random_fields],pred_val[random_fields]))
+        # Create a colormap that spans the range of unique numbers
+        all_unique_numbers = [0, 1, 2, 3, 4, 5]
+        colors = plt.cm.viridis(np.linspace(0, 1, len(all_unique_numbers)))
+        color_map = {num: colors[i] for i, num in enumerate(sorted(all_unique_numbers))}
 
-        """ 
-        data_wrong_class = val_data.iloc[wrong_classified]
-        site_most_wrong = data_wrong_class[
-            data_wrong_class["site"] == data_wrong_class["site"].value_counts(normalize=True
-                                                                              ).index[0]
-        ]
-        if len(site_most_wrong) < 16:
-            self.plot_16_pictures(range(len(site_most_wrong)), data_wrong_class)
-        else:
-            self.plot_16_pictures(
-                np.random.choice(range(len(site_most_wrong)),
-                                 size=16, replace=False),
-                data_wrong_class,
-            ) 
+        fig, axes = plt.subplots(2, n_samples, figsize=(12, 4))
+        axes_flat = axes.flatten()
 
-        plt.suptitle("worst site: " +
-                     str(data_wrong_class["site"][0]), size=120)
-        wandb.log({"Bad site": plt})
-        plt.close() """
+        for i, data in enumerate(data_list):
+            # Create the heatmap for the current data array without a color bar
+            used_colors = list(map(color_map.get, np.unique(data)) )
+            sns.heatmap(data, cmap=used_colors, cbar=False, ax=axes_flat[i])
+            if i < n_samples:
+                title_text = "Target"
+                number_field = i
+            else:
+                title_text = "Prediction"
+                number_field = i-n_samples
+            axes_flat[i].set_title(f'{title_text} field {number_field+1}',fontsize = 8)
+            axes_flat[i].set_xticks([])
+            axes_flat[i].set_yticks([])
+            axes_flat[i].set_xticklabels([])
+            axes_flat[i].set_yticklabels([]) 
+        
+                          
+        wandb.log({"Example Fields": wandb.Image(plt)})
+        plt.close()
+        
+
 
     def plot_16_pictures(targets,predictions,n_samples=6) -> None:
         """
@@ -149,7 +150,7 @@ class Evaluation:
         random_fields = np.random.choice(list(range(0,targets.shape[0])),size=n_samples,replace=False)
         data_list = np.vstack((targets[random_fields],predictions[random_fields]))
         # Create a colormap that spans the range of unique numbers
-        all_unique_numbers = np.unique(data_list)
+        all_unique_numbers = [0, 1, 2, 3, 4, 5]
         colors = plt.cm.viridis(np.linspace(0, 1, len(all_unique_numbers)))
         color_map = {num: colors[i] for i, num in enumerate(sorted(all_unique_numbers))}
 
@@ -172,15 +173,3 @@ class Evaluation:
             axes_flat[i].set_xticklabels([])
             axes_flat[i].set_yticklabels([])
 
-        """
-        #TODO: check and maybe rework this
-        fig = plt.figure(figsize=(120, 90), dpi=20)
-        for n, variable in enumerate(index):
-            ax = fig.add_subplot(4, 4, n + 1)
-            datapoint = data.iloc[variable]
-            ax.imshow(Image.open(
-                "./competition_data/" + datapoint["filepath"]))
-            ax.set_title(
-                f"{self.classes[self.true_pred[variable]]} anstatt {self.classes[self.true_label[variable]]}",
-                size=60,
-            )"""
