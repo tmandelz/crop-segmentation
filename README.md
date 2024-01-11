@@ -34,7 +34,7 @@ This project closely aligns with [Challenge X - AgroLuege](https://gitlab.fhnw.c
 * Our Random Forest baseline training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/rf.ipynb)
 * Our U-Net training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/U_Net.ipynb)
 * Our ms-convSTAR training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/modelling_ms_convstar_dlbs.ipynb)
-    *Hint*: for this notebook to run you need some additional source files from [CHX-AgroLuege Repository](https://gitlab.fhnw.ch/thomas.mandelz/AgroLuege).
+    *Hint*: for this notebook to run you may need some additional source files from [CHX-AgroLuege Repository](https://gitlab.fhnw.ch/thomas.mandelz/AgroLuege).
 
 ## Getting Started
 
