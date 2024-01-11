@@ -34,20 +34,21 @@ class UNet(nn.Module):
 
         # 70 -> 35
         self.e41 = nn.Conv2d(256, 512, kernel_size=3,
-                             padding=1)  
+                             padding=1)
+        self.dropout1 = nn.Dropout2d(0.5)   
         self.e42 = nn.Conv2d(512, 512, kernel_size=3,
-                             padding=1)          
+                             padding=1)         
         self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
         
          
 
         # long-Format
         self.e51 = nn.Conv2d(512, 1024, kernel_size=3,
-                             padding=1)  
+                             padding=1)
+        self.dropout2 = nn.Dropout2d(0.5)  
         self.e52 = nn.Conv2d(1024, 1024, kernel_size=3,
                              padding=1)  
-
-        
+               
          
         # Decoder
         self.upconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
@@ -85,10 +86,12 @@ class UNet(nn.Module):
         xp3 = self.pool3(xe32)
 
         xe41 = relu(self.e41(xp3))
-        xe42 = relu(self.e42(xe41))
+        xe41 = self.dropout1(xe41)
+        xe42 = relu(self.e42(xe41))        
         xp4 = self.pool4(xe42)
         
         xe51 = relu(self.e51(xp4))
+        xe51 = self.dropout2(xe51)
         xe52 = relu(self.e52(xe51))
         
 

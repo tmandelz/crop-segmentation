@@ -19,6 +19,8 @@ jupyter-contrib-nbextensions = "*"
 seaborn = "*"
 scikit-image = "*"
 h5py = "*"
+torcheval = "*"
+plotly = "*"
 
 [dev-packages]
 ipykernel = "*"
