@@ -1,18 +1,22 @@
 
-# Default Project
+# DLBS - AgroLuege
 
-This project is a part of the [XYZ Group](https://deep_model.ch) at [Data Science FHNW](https://www.fhnw.ch/en/degree-programmes/engineering/bsc-data-science).
+This project is a part of the [DLBS - AgroLuege](https://gitlab.fhnw.ch/thomas.mandelz/dlbs-crop-segmentation/) at [Data Science FHNW](https://www.fhnw.ch/en/degree-programmes/engineering/bsc-data-science).
 
-Repo Description
+In Switzerland, farmers manually enter crop information on the Agri-Portal for federal payments, verified on-site by the Federal Office for Agriculture. Our goal is to streamline this process using Sentinel-2 satellites and GIS data, providing farmers with a pre-filled crop basis for validation.
 
-## Project Status: In Progress
+This project closely aligns with [Challenge X - AgroLuege](https://gitlab.fhnw.ch/thomas.mandelz/AgroLuege). Within the dlbs module, we test alternative model architectures on smaller datasets, optimizing efficiency with fewer computing resources.
+
+## Project Status: Completed
 
 ## Project Intro/Objective
 
 ### Methods Used
 
 * Deep Learning
-* ...
+* Machine Learning
+* Semantic Segmentation
+* Crop Classification
 
 ### Technologies
 
@@ -21,24 +25,24 @@ Repo Description
 * wandb
 * numpy
 * pandas
-* ...
+* sklearn
+* h5py
 
 ## Featured Files
 
-* To use the best Model with some demo images, use this notebook: [Demo Model Notebook for the best model](demo/demo_model.ipynb)
-* ...
+* Our Exploratory Data Analysis can be found in this notebook: [Exploratory Data Analysis Notebook](eda/eda.ipynb)
+* Our Random Forest baseline training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/rf.ipynb)
+* Our U-Net training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/U_Net.ipynb)
+* Our ms-convSTAR training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/modelling_ms_convstar_dlbs.ipynb)
+    *Hint*: for this notebook to run you need some additional source files from [CHX-AgroLuege Repository](https://gitlab.fhnw.ch/thomas.mandelz/AgroLuege).
 
 ## Getting Started
 
 * Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
-* Demo files are being kept [here](demo)
-* Raw Data is being kept [here](competition_data)
-* Explorative Dataanalysis Scripts and Files are being kept [here](Eda)
-* Megadetector Scripts and data is being kept [here](megadetector)
-* Models are being kept [here](model_submit)
-* Models submissions are being kept [here](data_submit)
+* Explorative Dataanalysis Scripts and Files are being kept [here](eda)
+* Models Definitions are being kept [here](models)
 * Source files for training are being kept [here](modelling)
-* Source files for pipeline are being kept [here](src)
+* SSource Code for deep-learning training pipeline are being kept [here](src)
 
 ## Pipenv for Virtual Environment
 
@@ -59,5 +63,4 @@ Repo Description
 ## Contributing Members
 
 * **[Thomas Mandelz](https://github.com/tmandelz)**
-* **[Jan Zwicky](https://github.com/swiggy123)**
-* ...
+* **[Daniela Herzig](https://gitlab.fhnw.ch/daniela.herzig)**
