@@ -1,5 +1,4 @@
 # %%
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,6 +8,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from src.dataset import Dataset
 from src.evaluation import Evaluation
+
 
 
 # %%
@@ -25,7 +25,6 @@ def _set_seed(seed: int = 42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
 # %%
 device = torch.device(
     "cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -40,7 +39,8 @@ class DeepModel_Trainer:
         device: torch.device = device,
         random_cv_seeds: list = [42, 43, 44, 45, 46],
         rescale: bool = True,
-        temporal_sampling = True
+        temporal_sampling=True,
+        augment_rate=0.66        
         ) -> None:
         """
         Load the train/test/val data.
@@ -61,21 +61,23 @@ class DeepModel_Trainer:
         self.gt_path = gt_path
         self.rescale = rescale
         self.temporal_sampling = temporal_sampling
+        self.augment_rate = augment_rate
         
-    def create_loader(self,eval_mode=False):
+    def create_loader(self, eval_mode=False):
         """
         Creates the train/test (80/20) loader for all the models
          
         """ 
         if eval_mode:
-            dataset_train = Dataset(self.datadir, 0., 'test', True, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
-            dataset_test = Dataset(self.datadir, 0., 'test', True, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
+            dataset_train = Dataset(self.datadir, 0., 'test', True, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
+            dataset_test = Dataset(self.datadir, 0., 'test', True, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
         else:
-            dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
-            dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling)
-                
-        self.train_loader = torch.utils.data.DataLoader(dataset_train, batch_size=16, shuffle=False, num_workers=0)
-        self.test_loader = torch.utils.data.DataLoader(dataset_test, batch_size=16, shuffle=False, num_workers=0)
+            dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
+            dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
+
+        self.train_loader = torch.utils.data.DataLoader(dataset_train, self.batch_size, shuffle=False, num_workers=0)
+        self.test_loader = torch.utils.data.DataLoader(dataset_test, self.batch_size, shuffle=False, num_workers=0)
+  
 
     def setup_wandb_run(
         self,        
@@ -96,7 +98,7 @@ class DeepModel_Trainer:
         """
         # init wandb
         self.run = wandb.init(
-            settings=wandb.Settings(start_method="thread"),
+            settings=wandb.Settings(start_method="thread", _service_wait=300),
             project='dlbs_crop-UNet',
             entity="dlbs_crop",
             name=f"{fold}-Fold",
@@ -116,9 +118,11 @@ class DeepModel_Trainer:
         fold: str,
         num_epochs: int,
         test_model: bool,
-        loss_module: nn = nn.CrossEntropyLoss(weight=torch.tensor([10**-40, 1, 1, 1, 1, 1])),        
-        lr=1e-3,        
-        validate_batch_loss_each: int = 20,        
+        lr=int,
+        batch_size = int,
+        loss_module: nn = nn.CrossEntropyLoss(weight=torch.tensor([10**-40, 1, 1, 1, 1, 1]).to(device)),
+        weight_decay=0,
+        augment_rate = 0.66        
         
     ) -> None:
         """
@@ -137,7 +141,7 @@ class DeepModel_Trainer:
         :param bool cross_validation_random_seeding: defines whether to use the same seed for each fold or to use different ones
 
         """
-        
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         
         # setup a new wandb run
         self.setup_wandb_run(
@@ -148,26 +152,24 @@ class DeepModel_Trainer:
             model_architecture
             )
 
-               
-        # Dataset and Dataloader
+        self.batch_size = batch_size
+        self.augment_rate = augment_rate
         self.create_loader()
+        self.weight_decay=weight_decay
         
         # Overfitting Test for first batch
         if test_model:
             self.train_loader = [next(iter(self.train_loader))]
-            self.test_loader = [next(iter(self.test_loader))]
-        
-        
-        # prepare the model
-        #model = self.model()
-        optimizer = optim.Adam(self.model.parameters(), lr, weight_decay=0)
-        
+                 
+                
         # training mode
         self.model.train()
         self.model.to(device)
         
+        # prepare the model
+        optimizer = optim.Adam(self.model.parameters(), lr, self.weight_decay)
+        
         # train loop over epochs
-        #batch_iter = 1
         for epoch in tqdm(range(num_epochs), unit="epoch", desc="Epoch-Iteration"):
             loss_train = np.array([])
             label_train_data = np.empty((0, 24, 24))
@@ -179,42 +181,36 @@ class DeepModel_Trainer:
                 # calc gradient
                 input, target_glob, target_local_1, target_local_2 = data
                 
+                
                 if torch.cuda.is_available():
-                    input = input.cuda()
+                    input = input.to(device)
+                    target_local_1 = target_local_1.to(device)
                 
                 # upscaling UNet
-                # upscaling from 24 x 24 x 4 to 572 x 572 x 4
-                # https://forum.sentinel-hub.com/t/techniques-to-get-high-resolution-images-of-given-coordinates-through-eo-browser-or-python-package/4161
                 if self.rescale:
-                    up = nn.Upsample(size=(560, 560), mode='bicubic')
-                    input = torch.squeeze(input)
-                    input_up = up(input)
                     
-                preds = self.model(input_up)
+                    up = nn.Upsample(size=(80, 80), mode='bicubic')
+                    if input.shape[0]!=1:
+                        input = torch.squeeze(input)
+                    else:
+                        input = input.view(1, 4, 24, 24)
+                    
+                    input_up = up(input)
+
+                    
+                preds = self.model(input_up)                
                 
                 
                 if self.rescale:
                     down = nn.Upsample(size=(24, 24), mode='bicubic')                    
-                    preds = down(preds)                    
-                    
+                    preds = down(preds)
+                    preds = preds.to(device)               
                 
                 loss = loss_module(preds, target_local_1)
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-                loss_val_batch = None
-                if batch_iter % validate_batch_loss_each == 0:
-                    pred_val, label_val, preds1 = self.predict(self.model, 
-                        self.test_loader)
-                    
-                
-                loss_val_batch = loss_module(preds1,
-                                                torch.tensor(label_val, dtype=torch.long))
-
-                self.evaluation.per_batch(
-                    batch_iter, epoch, loss, loss_val_batch)
 
                 # data for evaluation                
                 label_train_data = np.concatenate(
@@ -228,14 +224,16 @@ class DeepModel_Trainer:
                 )
                 loss_train = np.append(loss_train, loss.item())
 
-                # iter next batch
-                batch_iter += 1
-                
                 
             # wandb per epoch
             pred_val, label_val, preds1 = self.predict(self.model, self.test_loader)
-            loss_val = loss_module(preds1, 
-                                   torch.tensor(label_val, dtype=torch.long))
+            
+            
+            label_val_t = torch.tensor(label_val, dtype=torch.long).to(device)
+            pred_val_t = torch.tensor(pred_val).to(device)
+            preds_1_t = torch.tensor(preds1, dtype=torch.float).to(device)
+            
+            loss_val = loss_module(preds_1_t, label_val_t)
 
             self.evaluation.per_epoch(
                 epoch,
@@ -247,8 +245,8 @@ class DeepModel_Trainer:
                 label_val,
             )
   
-            # wandb per model
-            self.evaluation.per_model(
+        # wandb per model
+        self.evaluation.per_model(
                 label_val, pred_val)
 
             
@@ -272,6 +270,7 @@ class DeepModel_Trainer:
         model.eval()
         predictions = np.empty((0, 24, 24))
         true_labels = np.empty((0, 24, 24))
+        preds1 = np.empty((0, 6, 24, 24))
         with torch.no_grad():  # Deactivate gradients for the following code
             
             for batch_iter, data in enumerate(data_loader, 0):
@@ -280,26 +279,29 @@ class DeepModel_Trainer:
                 input, target_glob, target_local_1, target_local_2 = data
                 
                 if torch.cuda.is_available():
-                    input = input.cuda()
+                    input = input.to(device)
+                    target_local_1 = target_local_1.to(device)
                     
                 if self.rescale:
-                    up = nn.Upsample(size=(560, 560), mode='bicubic')
+                    up = nn.Upsample(size=(80, 80), mode='bicubic')
                     input = torch.squeeze(input)
                     input = up(input)
 
                 preds = model(input)
+                preds = preds.to(device)
                 
                 if self.rescale:
                     down = nn.Upsample(size=(24, 24), mode='bicubic')                    
                     preds = down(preds)
-                    
-                    preds1 = nn.functional.softmax(preds, dim=1)
-                    
-                    preds = torch.argmax(preds1, dim=1)
-                    
+                    preds_1 = nn.functional.softmax(preds, dim=1)
+                    preds_2 = torch.argmax(preds_1, dim=1)
                     
                 predictions = np.concatenate(
-                    (predictions, preds.data.cpu().numpy()), axis=0
+                    (predictions, preds_2.data.cpu().numpy()), axis=0
+                )
+                
+                preds1 = np.concatenate(
+                    (preds1, preds_1.data.cpu().numpy()), axis=0
                 )
 
                 true_labels = np.concatenate(
@@ -310,4 +312,4 @@ class DeepModel_Trainer:
  
 
     
-# %%
+

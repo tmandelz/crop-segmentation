@@ -4,10 +4,10 @@ import torchvision.transforms as transforms
 from torch.nn.functional import relu
 
 
-class UNet(nn.Module):
-    def __init__(self,rate, n_class=6):
+class UNet_small(nn.Module):
+    def __init__(self, n_class=6):
         super().__init__()
-        self.rate = rate
+                       
         
         # 80 -> 40
         self.e11 = nn.Conv2d(4, 64, kernel_size=3,
@@ -34,20 +34,20 @@ class UNet(nn.Module):
 
         # 10 -> 5
         self.e41 = nn.Conv2d(256, 512, kernel_size=3,
-                             padding=1)
-        self.dropout1 = nn.Dropout2d(self.rate)   
+                             padding=1)  
         self.e42 = nn.Conv2d(512, 512, kernel_size=3,
-                             padding=1)         
+                             padding=1)          
         self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
-
+        
+         
 
         # long-Format
         self.e51 = nn.Conv2d(512, 1024, kernel_size=3,
-                             padding=1)
-        self.dropout2 = nn.Dropout2d(self.rate)  
+                             padding=1)  
         self.e52 = nn.Conv2d(1024, 1024, kernel_size=3,
                              padding=1)  
-               
+
+        
          
         # Decoder
         self.upconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
@@ -85,12 +85,10 @@ class UNet(nn.Module):
         xp3 = self.pool3(xe32)
 
         xe41 = relu(self.e41(xp3))
-        xe41 = self.dropout1(xe41)
-        xe42 = relu(self.e42(xe41))        
+        xe42 = relu(self.e42(xe41))
         xp4 = self.pool4(xe42)
         
         xe51 = relu(self.e51(xp4))
-        xe51 = self.dropout2(xe51)
         xe52 = relu(self.e52(xe51))
         
 

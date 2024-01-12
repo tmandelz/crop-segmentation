@@ -1,9 +1,7 @@
 import numpy as np
-import pandas as pd
 import wandb
-from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
-from PIL import Image
 from strenum import StrEnum
 import torch
 from torcheval.metrics.functional import multiclass_f1_score
@@ -67,14 +65,21 @@ class Evaluation:
         pred_val = torch.tensor(pred_val).flatten()
         label_val = torch.tensor(label_val).flatten()
         
+        cm = confusion_matrix(label_val, pred_val, labels=[0, 1, 2, 3, 4, 5])
+        cm_f = cm.astype(float)
+        cm_sm = cm_f[1:,1:]
+        
+        overall_acc = np.sum(np.diag(cm_sm)) / np.sum(cm_sm)
+        
+        recall = np.diag(cm_sm)/(np.sum(cm_sm, axis=1) + 1e-12)
+        precision = np.diag(cm_sm)/(np.sum(cm_sm, axis=0) + 1e-12)
+        f1_test = (2 * precision * recall) / ((precision + recall) + 1e-12)
         
         f1_train ={f"train f1_score_global": multiclass_f1_score(pred_train, label_train, num_classes=6, average='micro')}
-    
-        f1_test = {f"test f1_score_global":multiclass_f1_score(pred_val, label_val, num_classes=6, average='micro')}
             
         
-        log = {"epoch": epoch, "Loss train": loss_train, "Loss val": loss_val}
-        wandb.log({**f1_train, **f1_test, **log})
+        log = {"epoch": epoch, "Loss train": loss_train, "Loss val": loss_val, "overall_accuracy": overall_acc, "test f1_score_global": f1_test.mean()}
+        wandb.log({**f1_train, **log})
 
     def per_model(self, label_val, pred_val) -> None:
         """
@@ -91,9 +96,9 @@ class Evaluation:
         disp.plot()
         plt.xticks(rotation = 45)
         
+        
         cm_f = cm.astype(float)
         cl_acc = np.diag(cm_f) / (cm_f.sum(1) + 1e-12)
-        overall_acc = np.sum(np.diag(cm)) / np.sum(cm)
         
         
         wandb.log(
@@ -102,16 +107,14 @@ class Evaluation:
             }
         )
         plt.close()
-        
-        log = {"overall_accuracy": overall_acc}
-        wandb.log({**log})
+                
         wandb.log(dict(zip(self.classes,cl_acc)))
         
-        #self.plot_16_pictures(label_val, pred_val) 
+        
         n_samples = 6
         random_fields = np.random.choice(list(range(0,label_val.shape[0])),size=n_samples,replace=False)        
         data_list = np.vstack((label_val[random_fields],pred_val[random_fields]))
-        # Create a colormap that spans the range of unique numbers
+        
         all_unique_numbers = [0, 1, 2, 3, 4, 5]
         colors = plt.cm.viridis(np.linspace(0, 1, len(all_unique_numbers)))
         color_map = {num: colors[i] for i, num in enumerate(sorted(all_unique_numbers))}
@@ -120,7 +123,7 @@ class Evaluation:
         axes_flat = axes.flatten()
 
         for i, data in enumerate(data_list):
-            # Create the heatmap for the current data array without a color bar
+            
             used_colors = list(map(color_map.get, np.unique(data)) )
             sns.heatmap(data, cmap=used_colors, cbar=False, ax=axes_flat[i])
             if i < n_samples:
@@ -134,42 +137,7 @@ class Evaluation:
             axes_flat[i].set_yticks([])
             axes_flat[i].set_xticklabels([])
             axes_flat[i].set_yticklabels([]) 
-        
+        fig.legend(title='Crop Classes')
                           
         wandb.log({"Example Fields": wandb.Image(plt)})
         plt.close()
-        
-
-
-    def plot_16_pictures(targets,predictions,n_samples=6) -> None:
-        """
-        plot 16 pcitures
-        :param np.array index: index of the chosen observations
-        :param pd.DataFrame data: data with the filepath of the images
-        """
-        random_fields = np.random.choice(list(range(0,targets.shape[0])),size=n_samples,replace=False)
-        data_list = np.vstack((targets[random_fields],predictions[random_fields]))
-        # Create a colormap that spans the range of unique numbers
-        all_unique_numbers = [0, 1, 2, 3, 4, 5]
-        colors = plt.cm.viridis(np.linspace(0, 1, len(all_unique_numbers)))
-        color_map = {num: colors[i] for i, num in enumerate(sorted(all_unique_numbers))}
-
-        fig, axes = plt.subplots(2, n_samples, figsize=(20, 4))
-        axes_flat = axes.flatten()
-
-        for i, data in enumerate(data_list):
-            # Create the heatmap for the current data array without a color bar
-            used_colors = list(map(color_map.get, np.unique(data)) )
-            sns.heatmap(data, cmap=used_colors, cbar=False, ax=axes_flat[i])
-            if i < n_samples:
-                title_text = "Target"
-                number_field = i
-            else:
-                title_text = "Prediction"
-                number_field = i-n_samples
-            axes_flat[i].set_title(f'{title_text} field {number_field+1}',fontsize = 8)
-            axes_flat[i].set_xticks([])
-            axes_flat[i].set_yticks([])
-            axes_flat[i].set_xticklabels([])
-            axes_flat[i].set_yticklabels([])
-

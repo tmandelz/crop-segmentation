@@ -13,7 +13,7 @@ class Dataset(torch.utils.data.Dataset):
                  return_cloud_cover=False, small_train_set_mode=False,
                  temporal_sampling = True,
                  spring_start:int = 15,
-                 autumn_start:int = 15,seed:int=42):
+                 autumn_start:int = 15,seed:int=42, augment_rate=0.66):
         
         self.data = h5py.File(path, "r", libver='latest', swmr=True)
         self.temporal_sampling =temporal_sampling
@@ -27,7 +27,7 @@ class Dataset(torch.utils.data.Dataset):
         self.max_obs = self.data["data"].shape[1]
         self.spatial = self.data["data"].shape[2:-1]
         self.t = t
-        self.augment_rate = 0.66
+        self.augment_rate = augment_rate
         self.eval_mode = eval_mode
         self.fold = fold
         self.num_channel = num_channel
