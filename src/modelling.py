@@ -63,7 +63,7 @@ class DeepModel_Trainer:
         self.temporal_sampling = temporal_sampling
         self.augment_rate = augment_rate
         
-    def create_loader(self, eval_mode=False):
+    def create_loader(self, Batch_size=4, eval_mode=False):
         """
         Creates the train/test (80/20) loader for all the models
          
@@ -75,8 +75,8 @@ class DeepModel_Trainer:
             dataset_train = Dataset(self.datadir, 0., 'test', False, 3, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
             dataset_test = Dataset(self.datadir, 0., 'test', False, 4, self.gt_path, num_channel=4, apply_cloud_masking=False,small_train_set_mode=False,temporal_sampling=self.temporal_sampling, augment_rate=self.augment_rate)
 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train, self.batch_size, shuffle=False, num_workers=0)
-        self.test_loader = torch.utils.data.DataLoader(dataset_test, self.batch_size, shuffle=False, num_workers=0)
+        self.train_loader = torch.utils.data.DataLoader(dataset_train, Batch_size, shuffle=False, num_workers=0)
+        self.test_loader = torch.utils.data.DataLoader(dataset_test, Batch_size, shuffle=False, num_workers=0)
   
 
     def setup_wandb_run(
@@ -154,7 +154,7 @@ class DeepModel_Trainer:
 
         self.batch_size = batch_size
         self.augment_rate = augment_rate
-        self.create_loader()
+        self.create_loader(Batch_size=batch_size)
         self.weight_decay=weight_decay
         
         # Overfitting Test for first batch
