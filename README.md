@@ -1,4 +1,3 @@
-
 # DLBS - AgroLuege
 
 This project is a part of the [DLBS - AgroLuege](https://gitlab.fhnw.ch/thomas.mandelz/dlbs-crop-segmentation/) at [Data Science FHNW](https://www.fhnw.ch/en/degree-programmes/engineering/bsc-data-science).
@@ -31,9 +30,9 @@ This project closely aligns with [Challenge X - AgroLuege](https://gitlab.fhnw.c
 ## Featured Files
 
 * Our Exploratory Data Analysis can be found in this notebook: [Exploratory Data Analysis Notebook](eda/eda.ipynb)
-* Our Random Forest baseline training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/rf.ipynb)
-* Our U-Net training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/U_Net.ipynb)
-* Our ms-convSTAR training can be found in this notebook: [Exploratory Data Analysis Notebook](modelling/modelling_ms_convstar_dlbs.ipynb)
+* Our Random Forest baseline training can be found in this notebook: [Random Forest](modelling/rf.ipynb)
+* Our U-Net training can be found in this notebook: [U-Net](modelling/U_Net.ipynb)
+* Our ms-convSTAR training can be found in this notebook: [ms-convSTAR](modelling/modelling_ms_convstar_dlbs.ipynb)
     *Hint*: for this notebook to run you may need some additional source files from [CHX-AgroLuege Repository](https://gitlab.fhnw.ch/thomas.mandelz/AgroLuege).
 
 ## Getting Started
