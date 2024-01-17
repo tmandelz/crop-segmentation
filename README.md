@@ -41,7 +41,7 @@ This project closely aligns with [Challenge X - AgroLuege](https://gitlab.fhnw.c
 * Explorative Dataanalysis Scripts and Files are being kept [here](eda)
 * Models Definitions are being kept [here](models)
 * Source files for training are being kept [here](modelling)
-* SSource Code for deep-learning training pipeline are being kept [here](src)
+* Source Code for deep-learning training pipeline are being kept [here](src)
 
 ## Pipenv for Virtual Environment
 
